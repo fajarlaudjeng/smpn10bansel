@@ -1,1 +1,0 @@
-# smpn10bansel

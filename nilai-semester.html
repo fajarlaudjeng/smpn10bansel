@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nilai Semester</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+    select { padding: 8px; margin-right: 10px; }
+    .summary { margin-top: 20px; font-weight: bold; }
+    .print-btn { margin-top: 20px; padding: 10px 15px; background: navy; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Nilai Semester</h2>
+
+  <label for="nis">Pilih NIS:</label>
+  <select id="nisDropdown"></select>
+
+  <label for="semester">Semester:</label>
+  <select id="semesterDropdown">
+    <option value="1">1</option>
+    <option value="2">2</option>
+  </select>
+
+  <button onclick="loadNilai()">Tampilkan</button>
+
+  <table id="nilaiTable">
+    <thead>
+      <tr><th>Mapel</th><th>Nilai</th><th>Deskripsi</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="summary" id="rekap"></div>
+
+  <button class="print-btn" onclick="window.print()">Cetak Rekap</button>
+
+  <script>
+    const API_KEY = "YOUR_API_KEY";
+    const SHEET_ID = "YOUR_SHEET_ID";
+
+    async function populateNIS() {
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/NilaiSemester!A2:A?key=${API_KEY}`);
+      const data = await res.json();
+      const nisSet = new Set((data.values || []).flat());
+      const dropdown = document.getElementById('nisDropdown');
+      dropdown.innerHTML = [...nisSet].map(nis => `<option value="${nis}">${nis}</option>`).join('');
+    }
+
+    async function loadNilai() {
+      const nis = document.getElementById('nisDropdown').value;
+      const semester = document.getElementById('semesterDropdown').value;
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/NilaiSemester!A2:F?key=${API_KEY}`);
+      const data = await res.json();
+      const rows = data.values || [];
+
+      const filtered = rows.filter(r => r[0] === nis && r[2] === semester);
+      const tbody = document.querySelector("#nilaiTable tbody");
+      tbody.innerHTML = "";
+
+      let total = 0;
+      filtered.forEach(row => {
+        tbody.innerHTML += `<tr><td>${row[3]}</td><td>${row[4]}</td><td>${row[5]}</td></tr>`;
+        total += parseFloat(row[4]);
+      });
+
+      const avg = (total / filtered.length).toFixed(2);
+      const predikat = avg >= 86 ? 'A' : avg >= 76 ? 'B' : avg >= 66 ? 'C' : 'D';
+      document.getElementById('rekap').innerText = `Rata-rata: ${avg} | Predikat: ${predikat}`;
+    }
+
+    populateNIS();
+  </script>
+</body>
+</html>
